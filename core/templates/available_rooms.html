@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Available Rooms - ANU Hostel System{% endblock %}
+{% block content %}
+<div class="container-fluid mt-2">
+    <h3 class="text-center mb-4">Available Rooms</h3>
+
+    {% if existing_booking %}
+        <div class="alert alert-info text-center">
+            You have already pre-booked <strong>{{ existing_booking.room.hostel.name }} - {{ existing_booking.room.room_number }}</strong>.
+            Please complete your payment before booking another room.
+        </div>
+    {% elif rooms %}
+        <div class="row">
+            {% for room in rooms %}
+            <div class="col-md-4 mb-4">
+                <div class="card bg-secondary text-light border-0 shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ room.hostel.name }} - Room {{ room.room_number }}</h5>
+                        <p class="mb-1">Type: {{ room.hostel.type }}</p>
+                        <p class="mb-1">Capacity: {{ room.capacity }} students</p>
+                        <p class="mb-1">Status: Vacant ✅</p>
+                        <p class="mb-1">Price: 
+                            {% if room.hostel.name == 'Crawford Type 1' %}
+                                <strong>Ksh 35,000</strong> (Type 1 Ensuite - Private Bathroom + Toilet)
+                            {% elif room.hostel.type == 'Ensuite' %}
+                                <strong>Ksh 28,000</strong> (Ensuite)
+                            {% else %}
+                                <strong>Ksh 24,000</strong> (Regular)
+                            {% endif %}
+                        </p>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="room_id" value="{{ room.id }}">
+                            <button type="submit" class="btn btn-light w-100 mt-2">
+                                Pre-Book for Ksh 2,500
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning text-center">No available rooms at the moment.</div>
+    {% endif %}
+</div>
+{% endblock %}

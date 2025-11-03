@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard - ANU Hostel System{% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <h2 class="mb-4" style="font-family: 'Poppins', sans-serif;">Admin Dashboard</h2>
+    <a href="{% url 'manage_bookings' %}" class="btn btn-light mt-3">Manage Bookings</a>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center p-3">
+                <h6 class="text-muted">Total Students</h6>
+                <h5 class="text-light mt-2">{{ total_students }}</h5>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center p-3">
+                <h6 class="text-muted">Pre-booked</h6>
+                <h5 class="text-light mt-2">{{ prebooked }}</h5>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center p-3">
+                <h6 class="text-muted">Fully Paid</h6>
+                <h5 class="text-light mt-2">{{ fully_paid }}</h5>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center p-3">
+                <h6 class="text-muted">Vacant Rooms</h6>
+                <h5 class="text-light mt-2">{{ vacant_rooms }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bookings Table -->
+    <div class="card mb-4 p-4">
+        <h5 style="font-family: 'Poppins', sans-serif;">Recent Bookings</h5>
+        <table class="table table-dark table-hover mt-3">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Room</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in recent_bookings %}
+                <tr>
+                    <td>{{ booking.student.user.get_full_name }}</td>
+                    <td>{{ booking.room }}</td>
+                    <td>
+                        {% if booking.status == 'paid' %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif booking.status == 'prebooked' %}
+                            <span class="badge bg-warning text-dark">Pre-booked</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Expired</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ booking.date_booked|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted">No bookings yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Flagged Students -->
+    <div class="card p-4">
+        <h5 style="font-family: 'Poppins', sans-serif;">Flagged Students (Incomplete Payments)</h5>
+        <table class="table table-dark table-hover mt-3">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Room</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flagged in flagged_students %}
+                <tr>
+                    <td>{{ flagged.student.user.get_full_name }}</td>
+                    <td>{{ flagged.room }}</td>
+                    <td><span class="badge bg-warning text-dark">Pre-booked</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted">No flagged students</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

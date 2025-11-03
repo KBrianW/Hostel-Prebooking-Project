@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard - ANU Hostel System{% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <!-- Hero header -->
+    <div class="card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h2 class="mb-1" style="font-family: 'Poppins', sans-serif;">Welcome, {{ request.user.first_name|default:request.user.username }}!</h2>
+                <p class="text-muted mb-0">Manage your hostel booking, payments and profile in one place.</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                {% if not booking %}
+                    <a href="{% url 'available_rooms' %}" class="btn btn-light me-2"><i class="bi bi-building"></i> Find a Room</a>
+                {% elif booking.status == 'prebooked' %}
+                    <a href="{% url 'student_profile' %}" class="btn btn-light me-2"><i class="bi bi-credit-card"></i> Complete Payment</a>
+                {% else %}
+                    <a href="#booking" class="btn btn-light me-2"><i class="bi bi-door-open"></i> View Booking</a>
+                {% endif %}
+                <a href="{% url 'student_profile' %}" class="btn btn-outline-light"><i class="bi bi-person"></i> My Profile</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status cards row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-house-door text-info fs-3 me-3"></i>
+                    <div>
+                        <div class="text-muted small">Booking Status</div>
+                        <div class="fw-semibold">
+                            {% if not booking %}No Active Booking{% elif booking.status == 'prebooked' %}Pre-booked{% elif booking.status == 'paid' %}Fully Paid{% else %}Expired{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-cash-coin text-info fs-3 me-3"></i>
+                    <div>
+                        <div class="text-muted small">Payment</div>
+                        <div class="fw-semibold">
+                            {% if booking %}
+                                {% if payment_total %}
+                                    {% if payment_remaining and payment_remaining > 0 %}
+                                        Remaining: Ksh {{ payment_remaining }}
+                                    {% else %}
+                                        Fully Paid
+                                    {% endif %}
+                                {% else %}—{% endif %}
+                            {% else %}—{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-calendar-event text-info fs-3 me-3"></i>
+                    <div>
+                        <div class="text-muted small">Booked On</div>
+                        <div class="fw-semibold">{% if booking %}{{ booking.date_booked|date:"M d, Y" }}{% else %}—{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-building text-info fs-3 me-3"></i>
+                    <div>
+                        <div class="text-muted small">Available Rooms</div>
+                        <div class="fw-semibold">{{ available_rooms_count|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking module -->
+    <div id="booking" class="card p-4 mb-4">
+        <h5>Booking</h5>
+        {% if booking %}
+            <div class="row">
+                <div class="col-md-7">
+                    <p class="mb-1"><strong>Room:</strong> {{ booking.room.hostel.name }} — {{ booking.room.room_number }}</p>
+                    <p class="mb-1"><strong>Type:</strong> {{ booking.room.hostel.type }}</p>
+                    <p class="mb-3"><strong>Status:</strong>
+                        {% if booking.status == 'paid' %}
+                            <span class="badge bg-success">Fully Paid</span>
+                        {% elif booking.status == 'prebooked' %}
+                            <span class="badge bg-warning text-dark">Pre-booked</span>
+                        {% else %}
+                            <span class="badge bg-danger">Expired</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-5">
+                    {% if payment_total %}
+                        <div class="small text-muted mb-1">Payment Progress</div>
+                        <div class="progress bg-dark" style="height:10px">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ payment_progress|default:0 }}%" aria-valuenow="{{ payment_progress|default:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2 small">
+                            <span>Total: Ksh {{ payment_total }}</span>
+                            <span>Remaining: Ksh {{ payment_remaining }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-3">
+                {% if booking.status == 'prebooked' %}
+                    <a href="{% url 'student_profile' %}" class="btn btn-light"><i class="bi bi-credit-card"></i> Complete Payment</a>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-bed fs-1 d-block mb-2"></i>
+                <p class="mb-3">You have no active booking.</p>
+                <a href="{% url 'available_rooms' %}" class="btn btn-light">Find a Room</a>
+            </div>
+        {% endif %}
+    </div>
+
+   <!-- Notifications Section (only latest 3 unread) -->
+<div id="notifications" class="card bg-dark text-light mt-4 shadow-sm">
+    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">New Notifications</h5>
+        <a href="{% url 'notifications_page' %}" class="btn btn-outline-light btn-sm">View All</a>
+    </div>
+
+    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+        {% if latest_unread_notifications %}
+            <ul class="list-group list-group-flush">
+                {% for note in latest_unread_notifications %}
+                    <li class="list-group-item bg-dark text-light border-secondary fw-bold">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span>{{ note.message }}</span><br>
+                                <small class="text-muted">{{ note.date_sent|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <span class="badge bg-info">New</span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="text-center text-muted py-4" style="opacity:.8">
+                <i class="bi bi-bell fs-2 d-block mb-2"></i>
+                <p class="mb-0">No more new notifications</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- Roommates Section -->
+{% if roommates %}
+<div class="card bg-dark text-light mt-4 shadow-sm">
+    <div class="card-header border-secondary">
+        <h5 class="mb-0">Your Roommate(s)</h5>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for mate in roommates %}
+        <li class="list-group-item bg-dark text-light border-secondary">
+            <strong>{{ mate.student.user.get_full_name }}</strong><br>
+            <small>Reg No: {{ mate.student.reg_no }}</small><br>
+            <small>Phone: {{ mate.student.phone }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% endblock %}

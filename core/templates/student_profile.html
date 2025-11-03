@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}My Profile - ANU Hostel System{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card p-4 mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-person-circle fs-2 text-info me-3"></i>
+            <div>
+                <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">My Profile</h4>
+                <small class="text-muted">Update your account details</small>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row g-3">
+        <!-- Readonly Details -->
+        <div class="col-lg-6">
+            <div class="card p-4 h-100">
+                <h6 class="text-muted mb-3">Student Details</h6>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="text-muted small">Full Name</label>
+                        <div class="form-control bg-dark text-light">{{ student.user.get_full_name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small">Registration Number</label>
+                        <div class="form-control bg-dark text-light">{{ student.reg_no }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small">Course</label>
+                        <div class="form-control bg-dark text-light">{{ student.course }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small">Year of Study</label>
+                        <div class="form-control bg-dark text-light">{{ student.year_of_study }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small">Gender</label>
+                        <div class="form-control bg-dark text-light">{{ student.gender }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editable Details -->
+        <div class="col-lg-6">
+            <div class="card p-4 h-100">
+                <h6 class="text-muted mb-3">Account Settings</h6>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" value="{{ student.user.username }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark text-light border-secondary">+254</span>
+                            <input type="text" name="phone" class="form-control" value="{{ student.phone }}" placeholder="7XXXXXXXX">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-light">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
