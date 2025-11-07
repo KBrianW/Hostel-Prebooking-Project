@@ -6,7 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - ANU Hostel System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        /* Placeholder styling that looks like watermark */
+        input::placeholder, select::placeholder {
+            color: #6c757d !important;
+            opacity: 0.7;
+        }
+        
+        /* Clear placeholder on focus */
+        input:focus::placeholder, input:focus {
+            color: inherit;
+        }
+        
+        /* Number input styling */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
 </head>
 <body class="bg-dark text-light">
     <div class="container py-5">
@@ -20,48 +43,103 @@
                                 <div class="alert alert-{{ message.tags }}">{{ message }}</div>
                             {% endfor %}
                         {% endif %}
-                        <form method="post">
+                        <form method="post" id="registrationForm">
                             {% csrf_token %}
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">First Name</label>
-                                    <input type="text" class="form-control" name="first_name">
+                                    <input type="text" class="form-control" name="first_name" placeholder="John">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Last Name</label>
-                                    <input type="text" class="form-control" name="last_name">
+                                    <input type="text" class="form-control" name="last_name" placeholder="Doe">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Username</label>
-                                    <input type="text" class="form-control" name="username" required>
+                                    <input type="text" class="form-control" name="username" placeholder="johndoe" required>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Password</label>
-                                    <input type="password" class="form-control" name="password" required>
+                                    <input type="password" class="form-control" name="password" placeholder="••••••••" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Reg No</label>
-                                    <input type="text" class="form-control" name="reg_no" required>
+                                    <label class="form-label">Registration Number</label>
+                                    <input type="text" class="form-control" name="reg_no" placeholder="ANU/2024/001" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Phone</label>
-                                    <input type="text" class="form-control" name="phone" required>
+                                    <label class="form-label">Phone Number</label>
+                                    <div class="input-group">
+                                        <select class="form-select" name="country_code" id="country_code" style="max-width: 120px;" required>
+                                            <option value="+254">+254 (KE)</option>
+                                            <option value="+255">+255 (TZ)</option>
+                                            <option value="+256">+256 (UG)</option>
+                                            <option value="+250">+250 (RW)</option>
+                                            <option value="+233">+233 (GH)</option>
+                                            <option value="+234">+234 (NG)</option>
+                                            <option value="+1">+1 (US/CA)</option>
+                                            <option value="+44">+44 (UK)</option>
+                                            <option value="+27">+27 (ZA)</option>
+                                            <option value="+91">+91 (IN)</option>
+                                            <option value="+86">+86 (CN)</option>
+                                            <option value="+81">+81 (JP)</option>
+                                            <option value="+61">+61 (AU)</option>
+                                            <option value="+49">+49 (DE)</option>
+                                            <option value="+33">+33 (FR)</option>
+                                            <option value="+39">+39 (IT)</option>
+                                            <option value="+34">+34 (ES)</option>
+                                            <option value="+31">+31 (NL)</option>
+                                            <option value="+32">+32 (BE)</option>
+                                            <option value="+41">+41 (CH)</option>
+                                            <option value="+46">+46 (SE)</option>
+                                            <option value="+47">+47 (NO)</option>
+                                            <option value="+45">+45 (DK)</option>
+                                            <option value="+358">+358 (FI)</option>
+                                            <option value="+351">+351 (PT)</option>
+                                            <option value="+30">+30 (GR)</option>
+                                            <option value="+353">+353 (IE)</option>
+                                            <option value="+64">+64 (NZ)</option>
+                                            <option value="+52">+52 (MX)</option>
+                                            <option value="+55">+55 (BR)</option>
+                                            <option value="+54">+54 (AR)</option>
+                                            <option value="+57">+57 (CO)</option>
+                                            <option value="+60">+60 (MY)</option>
+                                            <option value="+65">+65 (SG)</option>
+                                            <option value="+66">+66 (TH)</option>
+                                            <option value="+84">+84 (VN)</option>
+                                            <option value="+62">+62 (ID)</option>
+                                            <option value="+63">+63 (PH)</option>
+                                        </select>
+                                        <input type="tel" class="form-control" name="phone" id="phone" placeholder="712345678" required pattern="[0-9]{7,15}" minlength="7" maxlength="15">
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Gender</label>
                                     <select class="form-select" name="gender" required>
-                                        <option value="">Select</option>
-                                        <option>Male</option>
-                                        <option>Female</option>
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Year of Study</label>
-                                    <input type="text" class="form-control" name="year_of_study">
+                                    <input type="number" class="form-control" name="year_of_study" id="year_of_study" placeholder="4" min="1" max="6" required>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Course</label>
-                                    <input type="text" class="form-control" name="course">
+                                    <select class="form-select" name="course" required>
+                                        <option value="">Select Course</option>
+                                        <option value="BBIT">BBIT (Bachelor of Business Information Technology)</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Law">Law</option>
+                                        <option value="Procurement">Procurement</option>
+                                        <option value="IBM">IBM (International Business Management)</option>
+                                        <option value="Peace and Conflict">Peace and Conflict</option>
+                                        <option value="Commerce">Commerce</option>
+                                        <option value="Journalism">Journalism</option>
+                                        <option value="Theology">Theology</option>
+                                        <option value="Criminology">Criminology</option>
+                                        <option value="Psychology">Psychology</option>
+                                    </select>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-light w-100 mt-4">Register</button>
@@ -74,5 +152,174 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Clear placeholder text on focus for better UX
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"], input[type="password"]');
+            
+            inputs.forEach(input => {
+                const originalPlaceholder = input.placeholder;
+                
+                input.addEventListener('focus', function() {
+                    if (this.value === '') {
+                        this.placeholder = '';
+                    }
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (this.value === '') {
+                        this.placeholder = originalPlaceholder;
+                    }
+                });
+            });
+            
+            // Country-specific phone number length requirements
+            const phoneLengths = {
+                '+254': { min: 9, max: 9, placeholder: '712345678', help: '9 digits (e.g., 712345678)' }, // Kenya
+                '+255': { min: 9, max: 9, placeholder: '712345678', help: '9 digits' }, // Tanzania
+                '+256': { min: 9, max: 9, placeholder: '712345678', help: '9 digits' }, // Uganda
+                '+250': { min: 9, max: 9, placeholder: '712345678', help: '9 digits' }, // Rwanda
+                '+233': { min: 9, max: 9, placeholder: '241234567', help: '9 digits' }, // Ghana
+                '+234': { min: 10, max: 10, placeholder: '8012345678', help: '10 digits' }, // Nigeria
+                '+1': { min: 10, max: 10, placeholder: '5551234567', help: '10 digits' }, // US/Canada
+                '+44': { min: 10, max: 10, placeholder: '7123456789', help: '10 digits' }, // UK
+                '+27': { min: 9, max: 9, placeholder: '821234567', help: '9 digits' }, // South Africa
+                '+91': { min: 10, max: 10, placeholder: '9876543210', help: '10 digits' }, // India
+                '+86': { min: 11, max: 11, placeholder: '13800138000', help: '11 digits' }, // China
+                '+81': { min: 10, max: 10, placeholder: '9012345678', help: '10 digits' }, // Japan
+                '+61': { min: 9, max: 9, placeholder: '412345678', help: '9 digits' }, // Australia
+                '+49': { min: 10, max: 11, placeholder: '15123456789', help: '10-11 digits' }, // Germany
+                '+33': { min: 9, max: 9, placeholder: '612345678', help: '9 digits' }, // France
+                '+39': { min: 9, max: 10, placeholder: '3123456789', help: '9-10 digits' }, // Italy
+                '+34': { min: 9, max: 9, placeholder: '612345678', help: '9 digits' }, // Spain
+                '+31': { min: 9, max: 9, placeholder: '612345678', help: '9 digits' }, // Netherlands
+                '+32': { min: 9, max: 9, placeholder: '471234567', help: '9 digits' }, // Belgium
+                '+41': { min: 9, max: 9, placeholder: '791234567', help: '9 digits' }, // Switzerland
+                '+46': { min: 9, max: 9, placeholder: '701234567', help: '9 digits' }, // Sweden
+                '+47': { min: 8, max: 8, placeholder: '41234567', help: '8 digits' }, // Norway
+                '+45': { min: 8, max: 8, placeholder: '20123456', help: '8 digits' }, // Denmark
+                '+358': { min: 9, max: 10, placeholder: '501234567', help: '9-10 digits' }, // Finland
+                '+351': { min: 9, max: 9, placeholder: '912345678', help: '9 digits' }, // Portugal
+                '+30': { min: 10, max: 10, placeholder: '6941234567', help: '10 digits' }, // Greece
+                '+353': { min: 9, max: 9, placeholder: '851234567', help: '9 digits' }, // Ireland
+                '+64': { min: 8, max: 9, placeholder: '211234567', help: '8-9 digits' }, // New Zealand
+                '+52': { min: 10, max: 10, placeholder: '5512345678', help: '10 digits' }, // Mexico
+                '+55': { min: 10, max: 11, placeholder: '11987654321', help: '10-11 digits' }, // Brazil
+                '+54': { min: 10, max: 10, placeholder: '9112345678', help: '10 digits' }, // Argentina
+                '+57': { min: 10, max: 10, placeholder: '3123456789', help: '10 digits' }, // Colombia
+                '+60': { min: 9, max: 10, placeholder: '123456789', help: '9-10 digits' }, // Malaysia
+                '+65': { min: 8, max: 8, placeholder: '91234567', help: '8 digits' }, // Singapore
+                '+66': { min: 9, max: 9, placeholder: '812345678', help: '9 digits' }, // Thailand
+                '+84': { min: 9, max: 10, placeholder: '9123456789', help: '9-10 digits' }, // Vietnam
+                '+62': { min: 9, max: 11, placeholder: '8123456789', help: '9-11 digits' }, // Indonesia
+                '+63': { min: 10, max: 10, placeholder: '9123456789', help: '10 digits' }, // Philippines
+            };
+
+            // Format phone number input (only numbers) with length validation
+            const phoneInput = document.getElementById('phone');
+            const phoneHelp = document.createElement('small');
+            phoneHelp.className = 'text-muted d-block mt-1';
+            phoneHelp.id = 'phoneHelp';
+            if (phoneInput) {
+                phoneInput.parentElement.parentElement.appendChild(phoneHelp);
+                
+                phoneInput.addEventListener('input', function(e) {
+                    // Remove any non-numeric characters
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    
+                    // Validate length based on country code
+                    validatePhoneLength();
+                });
+                
+                // Add country-specific placeholder and validation on country code change
+                const countryCodeSelect = document.getElementById('country_code');
+                if (countryCodeSelect) {
+                    // Set initial validation
+                    updatePhoneValidation();
+                    
+                    countryCodeSelect.addEventListener('change', function() {
+                        updatePhoneValidation();
+                        validatePhoneLength();
+                    });
+                }
+                
+                function updatePhoneValidation() {
+                    const code = countryCodeSelect.value;
+                    const countryInfo = phoneLengths[code];
+                    
+                    if (countryInfo) {
+                        phoneInput.placeholder = countryInfo.placeholder;
+                        phoneInput.setAttribute('minlength', countryInfo.min);
+                        phoneInput.setAttribute('maxlength', countryInfo.max);
+                        phoneInput.pattern = `[0-9]{${countryInfo.min},${countryInfo.max}}`;
+                        phoneHelp.textContent = countryInfo.help;
+                        
+                        // Update validation message
+                        phoneInput.setCustomValidity('');
+                        if (phoneInput.value) {
+                            validatePhoneLength();
+                        }
+                    } else {
+                        phoneInput.placeholder = '1234567890';
+                        phoneInput.setAttribute('minlength', '7');
+                        phoneInput.setAttribute('maxlength', '15');
+                        phoneHelp.textContent = '7-15 digits';
+                    }
+                }
+                
+                function validatePhoneLength() {
+                    const code = countryCodeSelect.value;
+                    const countryInfo = phoneLengths[code];
+                    const phoneValue = phoneInput.value;
+                    
+                    if (!phoneValue) {
+                        phoneInput.setCustomValidity('');
+                        phoneHelp.className = 'text-muted d-block mt-1';
+                        return;
+                    }
+                    
+                    if (countryInfo) {
+                        if (phoneValue.length < countryInfo.min || phoneValue.length > countryInfo.max) {
+                            phoneInput.setCustomValidity(`Phone number must be ${countryInfo.min}${countryInfo.min !== countryInfo.max ? '-' + countryInfo.max : ''} digits for this country`);
+                            phoneHelp.className = 'text-danger d-block mt-1';
+                            phoneHelp.textContent = `❌ ${countryInfo.help} (Current: ${phoneValue.length} digits)`;
+                        } else {
+                            phoneInput.setCustomValidity('');
+                            phoneHelp.className = 'text-success d-block mt-1';
+                            phoneHelp.textContent = `✓ ${countryInfo.help}`;
+                        }
+                    } else {
+                        // Generic validation for countries not in list
+                        if (phoneValue.length < 7 || phoneValue.length > 15) {
+                            phoneInput.setCustomValidity('Phone number must be between 7 and 15 digits');
+                            phoneHelp.className = 'text-danger d-block mt-1';
+                            phoneHelp.textContent = `❌ 7-15 digits required (Current: ${phoneValue.length} digits)`;
+                        } else {
+                            phoneInput.setCustomValidity('');
+                            phoneHelp.className = 'text-success d-block mt-1';
+                            phoneHelp.textContent = '✓ Valid phone number';
+                        }
+                    }
+                }
+                
+                // Validate on blur
+                phoneInput.addEventListener('blur', validatePhoneLength);
+            }
+            
+            // Ensure year of study is numeric
+            const yearInput = document.getElementById('year_of_study');
+            if (yearInput) {
+                yearInput.addEventListener('input', function(e) {
+                    // Ensure only numbers 1-6
+                    if (this.value && (this.value < 1 || this.value > 6)) {
+                        this.setCustomValidity('Year must be between 1 and 6');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

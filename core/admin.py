@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import Student, Hostel, Room, Booking, Payment, Notification
+from .models import Student, Hostel, Room, Booking, Payment, Notification, FinanceTransaction
 
 # -----------------------------
 # INLINE ADMIN FOR STUDENT PROFILE LINKED TO USER
@@ -33,18 +33,23 @@ admin.site.register(User, CustomUserAdmin)
 # -----------------------------
 @admin.register(Hostel)
 class HostelAdmin(admin.ModelAdmin):
-    list_display = ('name', 'type', 'description')
+    list_display = ('name', 'gender', 'type', 'description')
     search_fields = ('name',)
-    list_filter = ('type',)
+    list_filter = ('gender', 'type',)
 
 # -----------------------------
 # ROOM ADMIN
 # -----------------------------
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ('room_number', 'hostel', 'capacity', 'is_vacant')
+    list_display = ('room_number', 'hostel', 'price', 'capacity', 'is_vacant', 'get_occupied_count')
     list_filter = ('hostel', 'is_vacant')
     search_fields = ('room_number', 'hostel__name')
+    list_editable = ('price', 'is_vacant')
+    
+    def get_occupied_count(self, obj):
+        return obj.get_occupied_count()
+    get_occupied_count.short_description = 'Occupied'
 
 # -----------------------------
 # BOOKING ADMIN
@@ -85,3 +90,37 @@ class NotificationAdmin(admin.ModelAdmin):
         """Show a shortened preview of the message."""
         return (obj.message[:60] + "...") if len(obj.message) > 60 else obj.message
     short_message.short_description = "Message"
+
+# -----------------------------
+# FINANCE TRANSACTION ADMIN
+# -----------------------------
+@admin.register(FinanceTransaction)
+class FinanceTransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        'date_created', 
+        'transaction_type', 
+        'student', 
+        'amount', 
+        'status',
+        'booking'
+    )
+    list_filter = ('transaction_type', 'status', 'date_created')
+    search_fields = ('student__reg_no', 'student__user__first_name', 'student__user__last_name', 'description')
+    readonly_fields = ('date_created', 'date_completed')
+    list_editable = ('status',)
+    
+    fieldsets = (
+        ('Transaction Details', {
+            'fields': ('transaction_type', 'amount', 'status', 'description')
+        }),
+        ('Related Information', {
+            'fields': ('student', 'booking')
+        }),
+        ('Timestamps', {
+            'fields': ('date_created', 'date_completed')
+        }),
+    )
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('student__user', 'booking__room')

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Roommates - ANU Hostel System{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card p-4 mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-people fs-2 text-info me-3"></i>
+            <div>
+                <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">Roommates</h4>
+                <small class="text-muted">View your roommates information</small>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card p-4">
+        <div class="mb-3">
+            <h5>Your Room: {{ booking.room.hostel.name }} - Room {{ booking.room.room_number }}</h5>
+            <p class="text-muted">Capacity: {{ booking.room.capacity }} students</p>
+        </div>
+
+        {% if roommates %}
+            <h6 class="mb-3">Your Roommate(s):</h6>
+            <div class="row g-3">
+                {% for mate in roommates %}
+                <div class="col-md-6">
+                    <div class="card bg-dark text-light border-secondary">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ mate.student.user.get_full_name }}</h6>
+                            <p class="mb-1"><strong>Registration Number:</strong> {{ mate.student.reg_no }}</p>
+                            <p class="mb-1"><strong>Phone:</strong> {{ mate.student.phone|default:"Not provided" }}</p>
+                            <p class="mb-1"><strong>Course:</strong> {{ mate.student.course|default:"Not provided" }}</p>
+                            <p class="mb-0"><strong>Year:</strong> {{ mate.student.year_of_study|default:"Not provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-2 d-block mb-2"></i>
+                <p class="mb-0">You are currently the only occupant in this room, or no roommates have fully paid yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

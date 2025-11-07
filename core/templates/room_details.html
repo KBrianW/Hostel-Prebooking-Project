@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Room Details - ANU Hostel System{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-door-open fs-2 text-info me-3"></i>
+                <div>
+                    <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">Room Details</h4>
+                    <small class="text-muted">{{ room.hostel.name }} - Room {{ room.room_number }}</small>
+                </div>
+            </div>
+            <a href="{% url 'student_profile' %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left"></i> Back to Profile
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <h5 class="mb-3">Room Information</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <p><strong>Hostel:</strong> {{ room.hostel.name }}</p>
+                        <p><strong>Room Number:</strong> {{ room.room_number }}</p>
+                        <p><strong>Type:</strong> {{ room.hostel.type }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Price:</strong> Ksh {{ room.price|floatformat:2 }}</p>
+                        <p><strong>Capacity:</strong> {{ room.capacity }} students</p>
+                        <p><strong>Status:</strong> 
+                            {% if room.is_vacant %}
+                                <span class="badge bg-success">Vacant</span>
+                            {% else %}
+                                <span class="badge bg-danger">Occupied</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if room.hostel.description %}
+                    <div class="col-12">
+                        <hr>
+                        <p><strong>Description:</strong></p>
+                        <p class="text-muted">{{ room.hostel.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if roommates %}
+            <div class="card p-4 mt-3">
+                <h5 class="mb-3">Current Occupants</h5>
+                <div class="row g-3">
+                    {% for mate in roommates %}
+                    <div class="col-md-6">
+                        <div class="card bg-dark text-light border-secondary">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ mate.student.user.get_full_name }}</h6>
+                                <p class="mb-1"><small>Reg No: {{ mate.student.reg_no }}</small></p>
+                                <p class="mb-1"><small>Phone: {{ mate.student.phone|default:"Not provided" }}</small></p>
+                                <p class="mb-0"><small>Course: {{ mate.student.course|default:"Not provided" }}</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card p-4 mt-3">
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle fs-2 d-block mb-2"></i>
+                    <p class="mb-0">No occupants currently in this room.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card p-4">
+                <h6 class="mb-3">Room Statistics</h6>
+                <p><strong>Occupied:</strong> {{ occupied_count }} / {{ room.capacity }}</p>
+                <p><strong>Available Spots:</strong> {{ available_spots }}</p>
+                <hr>
+                <p class="mb-0"><small class="text-muted">Status: {% if room.is_vacant %}Vacant{% else %}Full{% endif %}</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

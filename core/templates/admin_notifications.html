@@ -4,69 +4,231 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">Admin Notifications</h4>
-            <small class="text-muted">Operational updates for bookings and payments</small>
+            <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">Admin Dashboard & Notifications</h4>
+            <small class="text-muted">Overview of bookings, payments, and system statistics</small>
         </div>
         <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
     </div>
 
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-light p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Pending Verification</h6>
+                        <h3 class="mb-0">{{ pending_payments_count }}</h3>
+                    </div>
+                    <i class="bi bi-clock-history fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Pre-booked</h6>
+                        <h3 class="mb-0">{{ total_prebooked }}</h3>
+                    </div>
+                    <i class="bi bi-bookmark fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-light p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Fully Paid</h6>
+                        <h3 class="mb-0">{{ total_fully_paid }}</h3>
+                    </div>
+                    <i class="bi bi-check-circle fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-light p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Vacant Rooms</h6>
+                        <h3 class="mb-0">{{ vacant_rooms }}/{{ total_rooms }}</h3>
+                    </div>
+                    <i class="bi bi-door-open fs-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3">
         <div class="col-lg-6">
-            <div class="card p-3 h-100">
-                <h6 class="text-muted mb-2">Recent Bookings</h6>
-                <ul class="list-group list-group-flush">
-                    {% for b in recent_bookings %}
-                    <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between">
-                        <div>
-                            <div class="fw-semibold">{{ b.student.user.get_full_name }} → {{ b.room.hostel.name }} {{ b.room.room_number }}</div>
-                            <small class="text-muted">{{ b.date_booked|date:"M d, Y H:i" }}</small>
-                        </div>
-                        <span class="badge {% if b.status == 'paid' %}bg-success{% elif b.status == 'prebooked' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ b.status|title }}</span>
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item bg-dark text-light border-secondary text-muted">No recent bookings.</li>
-                    {% endfor %}
-                </ul>
+            <div class="card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Awaiting Verification</h5>
+                    <a href="{% url 'manage_bookings' %}" class="btn btn-sm btn-light">View All</a>
+                </div>
+                {% if awaiting_verification %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Room</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in awaiting_verification %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ b.student.user.get_full_name }}</strong><br>
+                                        <small class="text-muted">{{ b.student.reg_no }}</small>
+                                    </td>
+                                    <td>
+                                        {% if b.room %}
+                                            {{ b.room.hostel.name }} - {{ b.room.room_number }}
+                                        {% else %}
+                                            <span class="text-muted">No room</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        Ksh {{ b.get_total_paid_all|floatformat:2 }} / 
+                                        <strong>Ksh {{ b.get_total_due|floatformat:2 }}</strong>
+                                    </td>
+                                    <td><small>{{ b.date_booked|date:"M d, Y" }}</small></td>
+                                    <td>
+                                        <a href="{% url 'manage_bookings' %}?search={{ b.student.reg_no }}" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-check-circle"></i> Verify
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>All payments verified. No pending verifications.
+                    </div>
+                {% endif %}
             </div>
         </div>
+        
         <div class="col-lg-6">
-            <div class="card p-3 h-100">
-                <h6 class="text-muted mb-2">Awaiting Verification</h6>
-                <ul class="list-group list-group-flush">
-                    {% for b in awaiting_verification %}
-                    <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="fw-semibold">{{ b.student.user.get_full_name }} — {{ b.room.hostel.name }} {{ b.room.room_number }}</div>
-                            <small class="text-muted">{{ b.date_booked|date:"M d, Y H:i" }}</small>
-                        </div>
-                        <a href="{% url 'manage_bookings' %}" class="btn btn-sm btn-light">Verify</a>
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item bg-dark text-light border-secondary text-muted">Nothing pending.</li>
-                    {% endfor %}
-                </ul>
+            <div class="card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-credit-card text-info me-2"></i>Recent Payments</h5>
+                    <span class="badge bg-info">{{ recent_payments|length }} recent</span>
+                </div>
+                {% if recent_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Room</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in recent_payments %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ p.booking.student.user.get_full_name }}</strong><br>
+                                        <small class="text-muted">{{ p.booking.student.reg_no }}</small>
+                                    </td>
+                                    <td><strong>Ksh {{ p.amount|floatformat:2 }}</strong></td>
+                                    <td>
+                                        {% if p.booking.room %}
+                                            {{ p.booking.room.hostel.name }} - {{ p.booking.room.room_number }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if p.verified %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><small>{{ p.date_paid|date:"M d, Y H:i" }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>No recent payments.
+                    </div>
+                {% endif %}
             </div>
         </div>
+        
         <div class="col-12">
-            <div class="card p-3">
-                <h6 class="text-muted mb-2">Recent Payments</h6>
-                <ul class="list-group list-group-flush">
-                    {% for p in recent_payments %}
-                    <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="fw-semibold">{{ p.booking.student.user.get_full_name }} — Ksh {{ p.amount }}</div>
-                            <small class="text-muted">{{ p.booking.room.hostel.name }} {{ p.booking.room.room_number }}</small>
-                        </div>
-                        {% if p.verified %}
-                            <span class="badge bg-success">Verified</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Pending</span>
-                        {% endif %}
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item bg-dark text-light border-secondary text-muted">No recent payments.</li>
-                    {% endfor %}
-                </ul>
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-list-ul text-light me-2"></i>Recent Bookings</h5>
+                    <a href="{% url 'manage_bookings' %}" class="btn btn-sm btn-light">View All Bookings</a>
+                </div>
+                {% if recent_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Reg No</th>
+                                    <th>Room</th>
+                                    <th>Status</th>
+                                    <th>Payment Progress</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in recent_bookings %}
+                                <tr>
+                                    <td><strong>{{ b.student.user.get_full_name }}</strong></td>
+                                    <td>{{ b.student.reg_no }}</td>
+                                    <td>
+                                        {% if b.room %}
+                                            {{ b.room.hostel.name }} - Room {{ b.room.room_number }}
+                                        {% else %}
+                                            <span class="text-muted">No room assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if b.status == 'paid' %}
+                                            <span class="badge bg-success">Fully Paid</span>
+                                        {% elif b.status == 'prebooked' %}
+                                            <span class="badge bg-warning text-dark">Pre-booked</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        Ksh {{ b.get_total_paid|floatformat:2 }} / 
+                                        <strong>Ksh {{ b.get_total_due|floatformat:2|default:"0.00" }}</strong>
+                                    </td>
+                                    <td><small>{{ b.date_booked|date:"M d, Y H:i" }}</small></td>
+                                    <td>
+                                        <a href="{% url 'manage_bookings' %}?search={{ b.student.reg_no }}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>No recent bookings.
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

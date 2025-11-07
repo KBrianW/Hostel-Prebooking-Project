@@ -11,11 +11,11 @@
                 <p class="text-muted mb-0">Manage your hostel booking, payments and profile in one place.</p>
             </div>
             <div class="mt-3 mt-md-0">
-                {% if not booking %}
+                {% if not booking or booking.status == 'expired' %}
                     <a href="{% url 'available_rooms' %}" class="btn btn-light me-2"><i class="bi bi-building"></i> Find a Room</a>
                 {% elif booking.status == 'prebooked' %}
                     <a href="{% url 'student_profile' %}" class="btn btn-light me-2"><i class="bi bi-credit-card"></i> Complete Payment</a>
-                {% else %}
+                {% elif booking.status == 'paid' %}
                     <a href="#booking" class="btn btn-light me-2"><i class="bi bi-door-open"></i> View Booking</a>
                 {% endif %}
                 <a href="{% url 'student_profile' %}" class="btn btn-outline-light"><i class="bi bi-person"></i> My Profile</a>
@@ -48,7 +48,7 @@
                             {% if booking %}
                                 {% if payment_total %}
                                     {% if payment_remaining and payment_remaining > 0 %}
-                                        Remaining: Ksh {{ payment_remaining }}
+                                        Remaining: Ksh {{ payment_remaining|floatformat:2 }}
                                     {% else %}
                                         Fully Paid
                                     {% endif %}
@@ -83,14 +83,79 @@
         </div>
     </div>
 
+    <!-- Finance Account Balance Card -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card bg-dark text-light">
+                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-wallet2 fs-4 text-info me-2"></i>
+                        <h5 class="mb-0">Finance Account Balance</h5>
+                    </div>
+                    <a href="{% url 'student_profile' %}" class="btn btn-outline-light btn-sm">View Details</a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-secondary rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small">Total Refunded</span>
+                                    <i class="bi bi-arrow-down-circle text-info"></i>
+                                </div>
+                                <h4 class="mb-0">Ksh {{ finance_total_refunded|floatformat:2|default:"0.00" }}</h4>
+                                <small class="text-muted">From cancelled bookings</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-secondary rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small">Amount Used</span>
+                                    <i class="bi bi-arrow-up-circle text-warning"></i>
+                                </div>
+                                <h4 class="mb-0">Ksh {{ finance_total_used|floatformat:2|default:"0.00" }}</h4>
+                                <small class="text-muted">For new bookings</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-info rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-white-50 small"><strong>Available Balance</strong></span>
+                                    <i class="bi bi-wallet text-white"></i>
+                                </div>
+                                <h3 class="mb-0 text-white"><strong>Ksh {{ finance_available_balance|floatformat:2|default:"0.00" }}</strong></h3>
+                                <small class="text-white-50">For future bookings</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% if finance_available_balance > 0 %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>You have Ksh {{ finance_available_balance|floatformat:2 }} available!</strong> 
+                        This amount will be automatically used when you prebook your next room (up to Ksh 2,500).
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No balance available. When you cancel a booking, refunds are added to your finance account.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Booking module -->
     <div id="booking" class="card p-4 mb-4">
         <h5>Booking</h5>
-        {% if booking %}
+        {% if booking and booking.status != 'expired' %}
             <div class="row">
                 <div class="col-md-7">
-                    <p class="mb-1"><strong>Room:</strong> {{ booking.room.hostel.name }} — {{ booking.room.room_number }}</p>
-                    <p class="mb-1"><strong>Type:</strong> {{ booking.room.hostel.type }}</p>
+                    {% if booking.room %}
+                        <p class="mb-1"><strong>Room:</strong> {{ booking.room.hostel.name }} — {{ booking.room.room_number }}</p>
+                        <p class="mb-1"><strong>Type:</strong> {{ booking.room.hostel.type }}</p>
+                    {% else %}
+                        <p class="mb-1"><strong>Room:</strong> <span class="text-muted">No room assigned</span></p>
+                    {% endif %}
                     <p class="mb-3"><strong>Status:</strong>
                         {% if booking.status == 'paid' %}
                             <span class="badge bg-success">Fully Paid</span>
@@ -118,6 +183,17 @@
                 {% if booking.status == 'prebooked' %}
                     <a href="{% url 'student_profile' %}" class="btn btn-light"><i class="bi bi-credit-card"></i> Complete Payment</a>
                 {% endif %}
+            </div>
+        {% elif booking and booking.status == 'expired' %}
+            <div class="alert alert-warning">
+                <h6><i class="bi bi-exclamation-triangle"></i> Booking Expired</h6>
+                {% if booking.room %}
+                    <p class="mb-2">Your previous booking for <strong>{{ booking.room.hostel.name }} - Room {{ booking.room.room_number }}</strong> has expired.</p>
+                {% else %}
+                    <p class="mb-2">Your previous booking has expired.</p>
+                {% endif %}
+                <p class="mb-3">You can now book a new room. Any payments made for the expired booking will be refunded to the finance office.</p>
+                <a href="{% url 'available_rooms' %}" class="btn btn-light"><i class="bi bi-building"></i> Book a New Room</a>
             </div>
         {% else %}
             <div class="text-center text-muted py-4">
@@ -163,18 +239,29 @@
 <!-- Roommates Section -->
 {% if roommates %}
 <div class="card bg-dark text-light mt-4 shadow-sm">
-    <div class="card-header border-secondary">
+    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Your Roommate(s)</h5>
+        <a href="{% url 'view_roommates' %}" class="btn btn-outline-light btn-sm">View All Details</a>
     </div>
     <ul class="list-group list-group-flush">
         {% for mate in roommates %}
         <li class="list-group-item bg-dark text-light border-secondary">
             <strong>{{ mate.student.user.get_full_name }}</strong><br>
             <small>Reg No: {{ mate.student.reg_no }}</small><br>
-            <small>Phone: {{ mate.student.phone }}</small>
+            <small>Phone: {{ mate.student.phone|default:"Not provided" }}</small>
         </li>
         {% endfor %}
     </ul>
+</div>
+{% elif booking and booking.status == 'paid' %}
+<div class="card bg-dark text-light mt-4 shadow-sm">
+    <div class="card-header border-secondary">
+        <h5 class="mb-0">Your Roommate(s)</h5>
+    </div>
+    <div class="card-body text-center text-muted">
+        <p class="mb-0">You are currently the only occupant in this room.</p>
+        <a href="{% url 'view_roommates' %}" class="btn btn-outline-light btn-sm mt-2">View Roommate Info</a>
+    </div>
 </div>
 {% endif %}
 

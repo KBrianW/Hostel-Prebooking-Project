@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Admin Profile - ANU Hostel System{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card p-4 mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-person-circle fs-2 text-info me-3"></i>
+            <div>
+                <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">Admin Profile</h4>
+                <small class="text-muted">Update your account details</small>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-lg-8 mx-auto">
+            <div class="card p-4">
+                <h6 class="text-muted mb-3">Account Settings</h6>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control bg-dark text-light" value="{{ user.get_full_name }}" disabled>
+                        <small class="text-muted">Name is managed by the school and cannot be changed</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" value="{{ user.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ user.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Staff Status</label>
+                        <input type="text" class="form-control bg-dark text-light" value="{% if user.is_staff %}Yes{% else %}No{% endif %}" disabled>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-light">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

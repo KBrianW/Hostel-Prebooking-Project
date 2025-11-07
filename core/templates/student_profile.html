@@ -6,57 +6,34 @@
         <div class="d-flex align-items-center">
             <i class="bi bi-person-circle fs-2 text-info me-3"></i>
             <div>
-                <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">My Profile</h4>
-                <small class="text-muted">Update your account details</small>
+                <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">My Profile & Payments</h4>
+                <small class="text-muted">Update your account details and make payments</small>
             </div>
         </div>
     </div>
 
     {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-success">{{ message }}</div>
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
     {% endif %}
 
     <div class="row g-3">
-        <!-- Readonly Details -->
+        <!-- Profile Details -->
         <div class="col-lg-6">
             <div class="card p-4 h-100">
-                <h6 class="text-muted mb-3">Student Details</h6>
-                <div class="row g-3">
-                    <div class="col-sm-6">
-                        <label class="text-muted small">Full Name</label>
-                        <div class="form-control bg-dark text-light">{{ student.user.get_full_name }}</div>
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted small">Registration Number</label>
-                        <div class="form-control bg-dark text-light">{{ student.reg_no }}</div>
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted small">Course</label>
-                        <div class="form-control bg-dark text-light">{{ student.course }}</div>
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted small">Year of Study</label>
-                        <div class="form-control bg-dark text-light">{{ student.year_of_study }}</div>
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted small">Gender</label>
-                        <div class="form-control bg-dark text-light">{{ student.gender }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Editable Details -->
-        <div class="col-lg-6">
-            <div class="card p-4 h-100">
-                <h6 class="text-muted mb-3">Account Settings</h6>
+                <h6 class="text-muted mb-3">Profile Information</h6>
                 <form method="POST">
                     {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control bg-dark text-light" value="{{ student.user.get_full_name }}" disabled>
+                        <small class="text-muted">Name is managed by the school and cannot be changed</small>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" value="{{ student.user.username }}">
+                        <input type="text" name="username" class="form-control" value="{{ student.user.username }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Phone Number</label>
@@ -65,10 +42,317 @@
                             <input type="text" name="phone" class="form-control" value="{{ student.phone }}" placeholder="7XXXXXXXX">
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Registration Number</label>
+                        <input type="text" class="form-control bg-dark text-light" value="{{ student.reg_no }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Course</label>
+                        <input type="text" class="form-control bg-dark text-light" value="{{ student.course|default:'N/A' }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <input type="text" class="form-control bg-dark text-light" value="{{ student.gender|default:'N/A' }}" disabled>
+                    </div>
                     <div class="d-flex justify-content-end">
                         <button type="submit" class="btn btn-light">Save Changes</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Payment Section -->
+        <div class="col-lg-6">
+            <div class="card p-4 h-100">
+                <h6 class="text-muted mb-3">Payment Information</h6>
+                {% if booking %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <p class="mb-0">
+                                <strong>Room:</strong> 
+                                {% if booking.room %}
+                                    {{ booking.room.hostel.name }} - {{ booking.room.room_number }}
+                                {% else %}
+                                    <span class="text-muted">No room assigned</span>
+                                {% endif %}
+                            </p>
+                            {% if booking.room %}
+                                <a href="{% url 'view_room_details' booking.room.id %}" class="btn btn-sm btn-outline-light">View Room</a>
+                            {% endif %}
+                        </div>
+                        <p><strong>Status:</strong> 
+                            {% if booking.status == 'paid' %}
+                                <span class="badge bg-success">Fully Paid</span>
+                            {% elif booking.status == 'prebooked' %}
+                                <span class="badge bg-warning text-dark">Pre-booked</span>
+                            {% else %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% endif %}
+                        </p>
+                        <hr>
+                        {% if booking.room %}
+                        <div class="alert alert-info">
+                            <h6 class="mb-2">Payment Summary</h6>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Total Due:</span>
+                                <strong>Ksh {{ total_due|floatformat:2|default:"0.00" }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Amount Paid:</span>
+                                <strong class="text-success">Ksh {{ paid_amount|floatformat:2|default:"0.00" }}</strong>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Remaining Balance:</strong></span>
+                                <strong class="text-warning">Ksh {{ remaining|floatformat:2|default:"0.00" }}</strong>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <p class="mb-0">No room assigned to this booking. Please contact admin.</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if booking.room and remaining > 0 and booking.status != 'paid' %}
+                            {% widthratio paid_amount total_due 100 as progress_percent %}
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ progress_percent }}%">
+                                    {{ progress_percent }}% Paid
+                                </div>
+                            </div>
+                            
+                            <!-- Finance Balance Info -->
+                            {% if finance_available_balance > 0 %}
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Finance Balance Available:</strong> Ksh {{ finance_available_balance|floatformat:2 }}<br>
+                                <small>This balance will be automatically used first when you make a payment.</small>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-grid gap-2 mb-3">
+                                <form method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="pay_full_balance">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-credit-card"></i> Pay Full Balance (Ksh {{ remaining|floatformat:2 }})
+                                    </button>
+                                </form>
+                                {% if finance_available_balance > 0 %}
+                                    {% if finance_available_balance >= remaining %}
+                                        <small class="text-muted text-center">
+                                            <i class="bi bi-check-circle text-success"></i> 
+                                            This will use Ksh {{ finance_to_use|floatformat:2 }} from your finance balance (no additional payment needed)
+                                        </small>
+                                    {% else %}
+                                        <small class="text-muted text-center">
+                                            <i class="bi bi-info-circle text-info"></i> 
+                                            This will use Ksh {{ finance_to_use|floatformat:2 }} from finance balance + Ksh {{ new_payment_needed|floatformat:2 }} new payment
+                                        </small>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            
+                            <form method="POST" class="mt-3">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="make_payment">
+                                <div class="mb-3">
+                                    <label class="form-label">Or Enter Custom Payment Amount (Ksh)</label>
+                                    <input type="number" name="amount" class="form-control" min="1" step="0.01" required>
+                                    <small class="text-muted">
+                                        {% if finance_available_balance > 0 %}
+                                            Finance balance (Ksh {{ finance_available_balance|floatformat:2 }}) will be used first automatically.
+                                            {% if new_payment_needed > 0 %}
+                                                You need to pay at least Ksh {{ new_payment_needed|floatformat:2 }}.
+                                            {% else %}
+                                                No additional payment needed (finance balance covers remaining).
+                                            {% endif %}
+                                        {% else %}
+                                            Enter any amount. If it exceeds the remaining balance, excess will be credited to finance.
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Record Payment</button>
+                                <small class="text-muted d-block mt-2">
+                                    Note: Finance balance is automatically applied. New payment will be verified by admin before confirmation.
+                                </small>
+                            </form>
+                        {% elif booking.status == 'paid' %}
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> Your booking is fully paid!
+                            </div>
+                        {% endif %}
+                        
+                        <hr class="my-3">
+                        <div class="d-grid gap-2">
+                            {% if booking.status == 'prebooked' %}
+                                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#changeRoomModal">
+                                    <i class="bi bi-arrow-repeat"></i> Change Room
+                                </button>
+                                {% if booking.status != 'paid' and not booking.is_fully_paid %}
+                                <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this booking? All payments (verified and unverified) will be refunded to the finance office and can be used for future bookings.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="cancel_booking">
+                                    <button type="submit" class="btn btn-danger w-100">
+                                        <i class="bi bi-x-circle"></i> Cancel Booking
+                                    </button>
+                                </form>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <small><strong>Note:</strong> Your booking is fully paid and permanent until the semester ends. You can renew or cancel at the end of the semester.</small>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Change Room Modal -->
+                    {% if booking.status == 'prebooked' and available_rooms %}
+                    <div class="modal fade" id="changeRoomModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content bg-dark text-light">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Change Room</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="change_room">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Select New Room</label>
+                                            <select name="new_room_id" class="form-select" required>
+                                                <option value="">-- Select a room --</option>
+                                                {% for room in available_rooms %}
+                                                    <option value="{{ room.id }}">
+                                                        {{ room.hostel.name }} - Room {{ room.room_number }} 
+                                                        ({{ room.hostel.type }}, Ksh {{ room.price|floatformat:0 }})
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="alert alert-warning">
+                                            <small>Note: Changing rooms will maintain your current payment progress.</small>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Change Room</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    <h6 class="mt-3">Payment History</h6>
+                    {% if payments %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                    <tr>
+                                        <td>Ksh {{ payment.amount|floatformat:2 }}</td>
+                                        <td>{{ payment.date_paid|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if payment.verified %}
+                                                <span class="badge bg-success">Verified</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No payments recorded yet.</p>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-info-circle fs-2 d-block mb-2"></i>
+                        <p>You have no active booking.</p>
+                        <a href="{% url 'available_rooms' %}" class="btn btn-light">Book a Room</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Finance Account Balance Section -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-wallet2 fs-3 text-info me-3"></i>
+                    <div>
+                        <h5 class="mb-0" style="font-family:'Poppins',sans-serif;">Finance Account Balance</h5>
+                        <small class="text-muted">Track your refunds and available balance in the finance office</small>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card bg-secondary text-light p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1">Total Refunded</h6>
+                                    <h4 class="mb-0">Ksh {{ finance_total_refunded|floatformat:2|default:"0.00" }}</h4>
+                                </div>
+                                <i class="bi bi-arrow-down-circle fs-1 text-info"></i>
+                            </div>
+                            <small class="text-muted">All refunds from cancelled bookings</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-secondary text-light p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1">Amount Used</h6>
+                                    <h4 class="mb-0">Ksh {{ finance_total_used|floatformat:2|default:"0.00" }}</h4>
+                                </div>
+                                <i class="bi bi-arrow-up-circle fs-1 text-warning"></i>
+                            </div>
+                            <small class="text-muted">Used for new prebookings/renewals</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-info text-light p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white-50 mb-1"><strong>Available Balance</strong></h6>
+                                    <h3 class="mb-0"><strong>Ksh {{ finance_available_balance|floatformat:2|default:"0.00" }}</strong></h3>
+                                </div>
+                                <i class="bi bi-wallet fs-1 text-white"></i>
+                            </div>
+                            <small class="text-white-50">Available for future bookings</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>How it works:</strong> When you cancel a booking, all payments are refunded to your finance account. 
+                    This balance is automatically used when you prebook a new room (Ksh 2,500). 
+                    You can view all transactions in detail on the finance dashboard (admin access only).
+                </div>
+                
+                {% if finance_available_balance > 0 %}
+                <div class="alert alert-success mt-2 mb-0">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong>You have Ksh {{ finance_available_balance|floatformat:2 }} available!</strong> 
+                    This amount will be automatically used when you prebook your next room.
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

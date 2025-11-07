@@ -1,47 +1,429 @@
 {% extends 'base.html' %}
 {% block title %}Available Rooms - ANU Hostel System{% endblock %}
 {% block content %}
-<div class="container-fluid mt-2">
-    <h3 class="text-center mb-4">Available Rooms</h3>
+<div class="container-fluid">
+    <div class="card p-4 mb-4">
+        <h4 class="mb-0" style="font-family:'Poppins',sans-serif;">Available Rooms</h4>
+        <small class="text-muted">Search and filter rooms by hostel and room number</small>
+    </div>
 
-    {% if existing_booking %}
-        <div class="alert alert-info text-center">
-            You have already pre-booked <strong>{{ existing_booking.room.hostel.name }} - {{ existing_booking.room.room_number }}</strong>.
-            Please complete your payment before booking another room.
-        </div>
-    {% elif rooms %}
-        <div class="row">
-            {% for room in rooms %}
-            <div class="col-md-4 mb-4">
-                <div class="card bg-secondary text-light border-0 shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ room.hostel.name }} - Room {{ room.room_number }}</h5>
-                        <p class="mb-1">Type: {{ room.hostel.type }}</p>
-                        <p class="mb-1">Capacity: {{ room.capacity }} students</p>
-                        <p class="mb-1">Status: Vacant ✅</p>
-                        <p class="mb-1">Price: 
-                            {% if room.hostel.name == 'Crawford Type 1' %}
-                                <strong>Ksh 35,000</strong> (Type 1 Ensuite - Private Bathroom + Toilet)
-                            {% elif room.hostel.type == 'Ensuite' %}
-                                <strong>Ksh 28,000</strong> (Ensuite)
-                            {% else %}
-                                <strong>Ksh 24,000</strong> (Regular)
-                            {% endif %}
-                        </p>
-                        <form method="POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="room_id" value="{{ room.id }}">
-                            <button type="submit" class="btn btn-light w-100 mt-2">
-                                Pre-Book for Ksh 2,500
-                            </button>
-                        </form>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Current Booking Alert -->
+    {% if active_booking %}
+        {% if is_fully_paid %}
+            <div class="alert alert-success" id="existingBookingAlert">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle fs-4 me-3"></i>
+                    <div>
+                        <strong>You have a fully paid booking:</strong><br>
+                        <span>{{ active_booking.room.hostel.name }} - Room {{ active_booking.room.room_number }} (Paid)</span><br>
+                        <small class="text-muted">Your booking is permanent until the semester ends. You cannot cancel or book another room.</small>
                     </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning" id="existingBookingAlert">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><i class="bi bi-exclamation-triangle"></i> You have an active booking:</strong><br>
+                        <span>{{ active_booking.room.hostel.name }} - Room {{ active_booking.room.room_number }} ({{ active_booking.status|title }})</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmCancelAndBook()">
+                        <i class="bi bi-x-circle"></i> Cancel & Book New Room
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Filter Section -->
+    <div class="card p-4 mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label"><strong>Filter by Hostel</strong></label>
+                <select class="form-select" id="hostelFilter" onchange="filterRooms()">
+                    <option value="">All Hostels</option>
+                    {% for hostel_name in hostel_names %}
+                        <option value="{{ hostel_name }}">{{ hostel_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><strong>Filter by Room Number</strong></label>
+                <select class="form-select" id="roomFilter" onchange="filterRooms()">
+                    <option value="">All Vacant Rooms</option>
+                    {% for room in all_available_rooms %}
+                        <option value="{{ room.room_number }}">{{ room.hostel.name }} - Room {{ room.room_number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><strong>Search</strong></label>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search by room number..." onkeyup="filterRooms()">
+            </div>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-light" onclick="clearFilters()">
+                <i class="bi bi-x-circle"></i> Clear Filters
+            </button>
+            <span class="ms-3 text-muted" id="resultsCount"></span>
+        </div>
+    </div>
+
+    <!-- Rooms Display -->
+    {% if rooms_by_hostel %}
+        <div id="roomsContainer">
+            {% for hostel_name, rooms_list in rooms_by_hostel.items %}
+            <div class="card p-4 mb-4 hostel-section" data-hostel="{{ hostel_name }}">
+                <h5 class="mb-3">
+                    <i class="bi bi-building"></i> {{ hostel_name }}
+                    <span class="badge bg-info ms-2" id="count-{{ hostel_name|slugify }}">0</span>
+                </h5>
+                <div class="row g-3" id="rooms-{{ hostel_name|slugify }}">
+                    {% for room in rooms_list %}
+                        {% if room.is_available %}
+                        <div class="col-md-6 col-lg-4 room-card" 
+                             data-hostel="{{ room.hostel.name }}" 
+                             data-room="{{ room.room_number }}"
+                             data-room-number="{{ room.room_number }}">
+                            <div class="card bg-secondary text-light border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">Room {{ room.room_number }}</h6>
+                                        {% if room.occupied_count == 0 %}
+                                            <span class="badge bg-success">Vacant</span>
+                                        {% elif room.occupied_count < room.capacity %}
+                                            <span class="badge bg-warning text-dark">{{ room.occupied_count }}/{{ room.capacity }} Occupied</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Full</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mb-1"><small><strong>Type:</strong> {{ room.hostel.type }}</small></p>
+                                    <p class="mb-1"><small><strong>Capacity:</strong> {{ room.capacity }} students</small></p>
+                                    <p class="mb-1"><small><strong>Current Occupancy:</strong> {{ room.occupied_count }} / {{ room.capacity }}</small></p>
+                                    <p class="mb-2"><strong>Price: Ksh {{ room.price|floatformat:0 }}</strong></p>
+                                    
+                                    {% if is_fully_paid %}
+                                        <button type="button" class="btn btn-sm btn-secondary w-100" disabled title="You already have a fully paid booking. Cannot book another room.">
+                                            <i class="bi bi-lock"></i> Cannot Book (Fully Paid)
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-light w-100" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#prebookModal{{ room.id }}"
+                                                onclick="if (!showRoomDetails({{ room.id }}, '{{ room.hostel.name }}', '{{ room.room_number }}', {{ room.occupied_count }}, {{ room.capacity }}, {{ room.price }}, '{{ room.hostel.type }}')) { event.preventDefault(); return false; }">
+                                            <i class="bi bi-bookmark"></i> Pre-Book (Ksh 2,500)
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <!-- Prebooking Modal -->
+                                    {% if not is_fully_paid %}
+                                    <div class="modal fade" id="prebookModal{{ room.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content bg-dark text-light">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Pre-Book Room</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="POST" id="prebookForm{{ room.id }}" onsubmit="return confirmPayment()">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="prebook">
+                                                    <input type="hidden" name="room_id" value="{{ room.id }}">
+                                                    <input type="hidden" name="prebook_amount" value="2500">
+                                                    <div class="modal-body">
+                                                        <div id="roomDetails{{ room.id }}">
+                                                            <p><strong>Hostel:</strong> <span id="modalHostel{{ room.id }}"></span></p>
+                                                            <p><strong>Room Number:</strong> <span id="modalRoom{{ room.id }}"></span></p>
+                                                            <p><strong>Room Type:</strong> <span id="modalType{{ room.id }}"></span></p>
+                                                            <p><strong>Current Occupancy:</strong> <span id="modalOccupancy{{ room.id }}"></span></p>
+                                                            <p><strong>Total Price:</strong> Ksh <span id="modalPrice{{ room.id }}"></span></p>
+                                                        </div>
+                                                        <hr>
+                                                        <div class="alert alert-info">
+                                                            <h6 class="mb-2">Prebooking Payment</h6>
+                                                            <p class="mb-1"><strong>Amount:</strong> Ksh 2,500.00</p>
+                                                            <p class="mb-0"><small>This is a fixed prebooking amount. You can complete the remaining payment later from your payments page.</small></p>
+                                                        </div>
+                                                        {% if active_booking and not is_fully_paid %}
+                                                        <div class="alert alert-warning">
+                                                            <small><strong>Note:</strong> You have an active booking. Prebooking this room will cancel your current booking.</small>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="bi bi-credit-card"></i> Make Payment (Ksh 2,500)
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             {% endfor %}
         </div>
+    {% elif expired_booking %}
+        <!-- Show expired booking with renewal option -->
+        <div class="card p-4 mb-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> Your Previous Booking</h6>
+                <p class="mb-2">Your booking for <strong>{{ expired_booking.room.hostel.name }} - Room {{ expired_booking.room.room_number }}</strong> has expired.</p>
+                <p class="mb-0">You can renew the same room or book a new one.</p>
+            </div>
+            
+            <!-- Renewal Option -->
+            {% if expired_booking.room %}
+                {% with occupied=expired_booking.room.get_occupied_count %}
+                {% if occupied < expired_booking.room.capacity %}
+                <div class="card bg-dark text-light mb-3">
+                    <div class="card-body">
+                        <h6>Renew Previous Room</h6>
+                        <p class="mb-2"><strong>{{ expired_booking.room.hostel.name }} - Room {{ expired_booking.room.room_number }}</strong></p>
+                        <p class="mb-2">Price: Ksh {{ expired_booking.room.price|floatformat:0 }}</p>
+                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#renewModal">
+                            <i class="bi bi-arrow-repeat"></i> Renew This Room
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Renewal Modal -->
+                <div class="modal fade" id="renewModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content bg-dark text-light">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Renew Room</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" onsubmit="return confirmPayment()">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="renew_room">
+                                <input type="hidden" name="booking_id" value="{{ expired_booking.id }}">
+                                <div class="modal-body">
+                                    <p><strong>Room:</strong> {{ expired_booking.room.hostel.name }} - Room {{ expired_booking.room.room_number }}</p>
+                                    <p><strong>Total Price:</strong> Ksh {{ expired_booking.room.price|floatformat:2 }}</p>
+                                    <div class="alert alert-info mt-3">
+                                        <p class="mb-0"><strong>Prebooking Payment:</strong> Ksh 2,500.00</p>
+                                    </div>
+                                    <p class="text-muted"><small>Renewal will reactivate your previous booking with a Ksh 2,500 prebooking payment.</small></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Make Payment (Ksh 2,500)</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endwith %}
+            {% endif %}
+            
+            <!-- Available Rooms for New Booking -->
+            {% if available_rooms_for_booking %}
+                <h6 class="mt-4 mb-3">Or Book a New Room</h6>
+                <div class="row g-3">
+                    {% for room in available_rooms_for_booking %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card bg-secondary text-light border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">Room {{ room.room_number }}</h6>
+                                    {% if room.occupied_count == 0 %}
+                                        <span class="badge bg-success">Vacant</span>
+                                    {% elif room.occupied_count < room.capacity %}
+                                        <span class="badge bg-warning text-dark">{{ room.occupied_count }}/{{ room.capacity }} Occupied</span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-1"><small><strong>Type:</strong> {{ room.hostel.type }}</small></p>
+                                <p class="mb-1"><small><strong>Capacity:</strong> {{ room.capacity }} students</small></p>
+                                <p class="mb-1"><small><strong>Current Occupancy:</strong> {{ room.occupied_count }} / {{ room.capacity }}</small></p>
+                                <p class="mb-2"><strong>Price: Ksh {{ room.price|floatformat:0 }}</strong></p>
+                                
+                                <button type="button" class="btn btn-sm btn-light w-100" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#prebookModal{{ room.id }}">
+                                    <i class="bi bi-bookmark"></i> Pre-Book (Ksh 2,500)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
     {% else %}
-        <div class="alert alert-warning text-center">No available rooms at the moment.</div>
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-building fs-2 d-block mb-2"></i>
+            <p>No available rooms at the moment.</p>
+        </div>
     {% endif %}
 </div>
+
+<!-- Cancel and Book Confirmation Modal -->
+{% if active_booking %}
+<div class="modal fade" id="cancelAndBookModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Current Booking?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>You already have a prebooked room: <strong>{{ active_booking.room.hostel.name }} - Room {{ active_booking.room.room_number }}</strong></p>
+                <p>Do you want to cancel this booking and prebook a new room?</p>
+                <div class="alert alert-info">
+                    <small><strong>Note:</strong> If you cancel, any verified payments will be refunded to the finance office. The system will automatically use Ksh 2,500 from your refund for the new prebooking.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep Current Booking</button>
+                <form method="POST" style="display:inline;" id="cancelAndBookForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel_and_prebook">
+                    <input type="hidden" name="current_booking_id" value="{{ active_booking.id }}">
+                    <button type="submit" class="btn btn-danger">Yes, Cancel & Book New Room</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+{% if is_fully_paid %}
+const IS_FULLY_PAID = true;
+{% else %}
+const IS_FULLY_PAID = false;
+{% endif %}
+
+function showRoomDetails(roomId, hostel, roomNumber, occupied, capacity, price, type) {
+    // Prevent opening modal if booking is fully paid
+    if (IS_FULLY_PAID) {
+        alert('You already have a fully paid booking. You cannot book another room until the semester ends.');
+        return false;
+    }
+    
+    document.getElementById('modalHostel' + roomId).textContent = hostel;
+    document.getElementById('modalRoom' + roomId).textContent = roomNumber;
+    document.getElementById('modalType' + roomId).textContent = type;
+    document.getElementById('modalOccupancy' + roomId).textContent = occupied + ' / ' + capacity;
+    document.getElementById('modalPrice' + roomId).textContent = price.toLocaleString('en-KE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return true;
+}
+
+function confirmPayment() {
+    return confirm('Are you sure you want to make a prebooking payment of Ksh 2,500?\n\nClick OK to proceed with the payment.');
+}
+
+function filterRooms() {
+    const hostelFilter = document.getElementById('hostelFilter').value.toLowerCase();
+    const roomFilter = document.getElementById('roomFilter').value.toLowerCase();
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    
+    const hostelSections = document.querySelectorAll('.hostel-section');
+    let totalVisible = 0;
+    
+    hostelSections.forEach(section => {
+        const hostelName = section.dataset.hostel.toLowerCase();
+        const roomCards = section.querySelectorAll('.room-card');
+        let visibleCount = 0;
+        
+        roomCards.forEach(card => {
+            const cardHostel = card.dataset.hostel.toLowerCase();
+            const roomNumber = card.dataset.roomNumber.toLowerCase();
+            
+            let show = true;
+            
+            // Filter by hostel
+            if (hostelFilter && cardHostel !== hostelFilter) {
+                show = false;
+            }
+            
+            // Filter by room number dropdown
+            if (roomFilter && !roomNumber.includes(roomFilter.replace(/.*room\s*/i, ''))) {
+                show = false;
+            }
+            
+            // Filter by search input
+            if (searchInput && !roomNumber.includes(searchInput)) {
+                show = false;
+            }
+            
+            if (show) {
+                card.style.display = 'block';
+                visibleCount++;
+                totalVisible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Update count badge
+        const badge = document.getElementById('count-' + section.dataset.hostel.replace(/\s+/g, '-').toLowerCase());
+        if (badge) {
+            badge.textContent = visibleCount;
+        }
+        
+        // Show/hide hostel section
+        section.style.display = visibleCount > 0 ? 'block' : 'none';
+    });
+    
+    // Update results count
+    const resultsCount = document.getElementById('resultsCount');
+    if (resultsCount) {
+        resultsCount.textContent = totalVisible + ' room(s) found';
+    }
+}
+
+function clearFilters() {
+    document.getElementById('hostelFilter').value = '';
+    document.getElementById('roomFilter').value = '';
+    document.getElementById('searchInput').value = '';
+    filterRooms();
+}
+
+function confirmCancelAndBook() {
+    const modal = new bootstrap.Modal(document.getElementById('cancelAndBookModal'));
+    modal.show();
+}
+
+// Initialize filter on page load
+document.addEventListener('DOMContentLoaded', function() {
+    filterRooms();
+    
+    // Prevent any room booking actions if fully paid
+    if (IS_FULLY_PAID) {
+        // Prevent modal opening via any method
+        document.addEventListener('show.bs.modal', function(e) {
+            const modalId = e.target.id;
+            if (modalId && modalId.startsWith('prebookModal')) {
+                e.preventDefault();
+                e.stopPropagation();
+                alert('You already have a fully paid booking. You cannot book another room until the semester ends.');
+                return false;
+            }
+        }, true);
+        
+        // Disable all room card interactions
+        const roomCards = document.querySelectorAll('.room-card');
+        roomCards.forEach(card => {
+            card.style.cursor = 'not-allowed';
+            card.style.opacity = '0.7';
+        });
+    }
+});
+</script>
 {% endblock %}

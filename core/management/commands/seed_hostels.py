@@ -5,89 +5,82 @@ class Command(BaseCommand):
     help = "Seeds hostel and room data for ANU Hostel System"
 
     def handle(self, *args, **options):
-        data = [
-            # Male hostels
-            {
-                "name": "Zanner",
-                "type": "Male",
-                "ensuite": 2,
-                "regular": 18,
-                "ensuite_price": 28000,
-                "regular_price": 24000,
-                "ensuite_desc": "Good bed structure, TV, and ethernet ports.",
-                "regular_desc": "Standard room for two students.",
-            },
-            {
-                "name": "Cahsman",
-                "type": "Male",
-                "ensuite": 1,
-                "regular": 19,
-                "ensuite_price": 28000,
-                "regular_price": 24000,
-                "ensuite_desc": "Bathroom and toilet included, ethernet ports.",
-                "regular_desc": "Standard room for two students.",
-            },
-            {
-                "name": "Johnson",
-                "type": "Male",
-                "ensuite": 0,
-                "regular": 20,
-                "regular_price": 24000,
-                "regular_desc": "Standard room for two students.",
-            },
-            # Female hostels
-            {
-                "name": "Crawford Type 1",
-                "type": "Female",
-                "ensuite": 20,
-                "regular": 0,
-                "ensuite_price": 35000,
-                "ensuite_desc": "Premium ensuite with TV, private bathroom, ethernet ports.",
-            },
-            {
-                "name": "Crawford Ensuite",
-                "type": "Female",
-                "ensuite": 20,
-                "regular": 0,
-                "ensuite_price": 28000,
-                "ensuite_desc": "Ensuite with bathroom and toilet, ethernet ports.",
-            },
-            {
-                "name": "Crawford Regular",
-                "type": "Female",
-                "ensuite": 0,
-                "regular": 20,
-                "regular_price": 24000,
-                "regular_desc": "Standard regular room for two students.",
-            },
-        ]
-
+        # Clear existing data
         Room.objects.all().delete()
         Hostel.objects.all().delete()
 
+        # Define hostel data based on requirements
+        data = [
+            # Male hostels - 60 rooms total (20 each)
+            {
+                "name": "Zanner",
+                "gender": "Male",
+                "rooms": [
+                    {"type": "Type 1", "count": 2, "price": 28000, "description": "Ethernet ports, decent bed structure, TV, no bathroom"},
+                    {"type": "Regular", "count": 18, "price": 24000, "description": "Standard room with beds and wardrobe"},
+                ],
+            },
+            {
+                "name": "Johnson",
+                "gender": "Male",
+                "rooms": [
+                    {"type": "Regular", "count": 20, "price": 24000, "description": "Standard room with beds and wardrobe"},
+                ],
+            },
+            {
+                "name": "Cashman",
+                "gender": "Male",
+                "rooms": [
+                    {"type": "Ensuite", "count": 1, "price": 28000, "description": "Bathroom, TV"},
+                    {"type": "Regular", "count": 19, "price": 24000, "description": "Standard room with beds and wardrobe"},
+                ],
+            },
+            # Female hostels - 60 rooms total
+            {
+                "name": "Crawford",
+                "gender": "Female",
+                "rooms": [
+                    {"type": "Type 1", "count": 2, "price": 35000, "description": "Type 1 Ensuite - Private Bathroom + Toilet, TV, ethernet port, good bed structure"},
+                    {"type": "Ensuite", "count": 5, "price": 28000, "description": "Ensuite with bathroom and TV"},
+                    {"type": "Regular", "count": 53, "price": 24000, "description": "Standard room with beds and wardrobe"},
+                ],
+            },
+        ]
+
         for hostel_data in data:
-            hostel = Hostel.objects.create(
-                name=hostel_data["name"],
-                type=hostel_data["type"],
-                description=hostel_data.get("ensuite_desc", hostel_data.get("regular_desc", "")),
-            )
-
-            # Create ensuite rooms
-            for i in range(1, hostel_data.get("ensuite", 0) + 1):
-                Room.objects.create(
-                    hostel=hostel,
-                    room_number=f"E{i:02}",
-                    capacity=2,
-                    is_vacant=True,
+            # Create hostels for each room type
+            for room_type_data in hostel_data["rooms"]:
+                room_type = room_type_data["type"]
+                hostel_name = f"{hostel_data['name']} {room_type}" if room_type != "Regular" else f"{hostel_data['name']}"
+                
+                # Special case: Crawford Type 1 should be "Crawford Type 1"
+                if hostel_data["name"] == "Crawford" and room_type == "Type 1":
+                    hostel_name = "Crawford Type 1"
+                elif hostel_data["name"] == "Crawford" and room_type == "Regular":
+                    hostel_name = "Crawford Regular"
+                elif hostel_data["name"] == "Crawford" and room_type == "Ensuite":
+                    hostel_name = "Crawford Ensuite"
+                
+                hostel = Hostel.objects.create(
+                    name=hostel_name,
+                    gender=hostel_data["gender"],
+                    type=room_type,
+                    description=room_type_data["description"],
                 )
 
-            # Create regular rooms
-            for i in range(1, hostel_data.get("regular", 0) + 1):
-                Room.objects.create(
-                    hostel=hostel,
-                    room_number=f"R{i:02}",
-                    capacity=2,
-                    is_vacant=True,
-                )
+                # Create rooms for this hostel
+                room_count = room_type_data["count"]
+                price = room_type_data["price"]
+                
+                for i in range(1, room_count + 1):
+                    Room.objects.create(
+                        hostel=hostel,
+                        room_number=f"{i:02d}",
+                        capacity=2,
+                        is_vacant=True,
+                        price=price,
+                    )
 
         self.stdout.write(self.style.SUCCESS("✅ Hostels and rooms successfully seeded!"))
+        self.stdout.write(self.style.SUCCESS(f"   Created {Hostel.objects.count()} hostels"))
+        self.stdout.write(self.style.SUCCESS(f"   Created {Room.objects.count()} rooms"))

@@ -54,12 +54,17 @@
                 {% if user.is_staff %}
                     <li class="nav-item mb-2"><a href="{% url 'admin_dashboard' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'admin_dashboard' %}fw-bold text-info{% endif %}">Dashboard</a></li>
                     <li class="nav-item mb-2"><a href="{% url 'manage_bookings' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'manage_bookings' %}fw-bold text-info{% endif %}">Bookings</a></li>
+                    <li class="nav-item mb-2"><a href="{% url 'manage_rooms' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'manage_rooms' %}fw-bold text-info{% endif %}">Rooms</a></li>
+                    <li class="nav-item mb-2"><a href="{% url 'manage_admins' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'manage_admins' %}fw-bold text-info{% endif %}">Admins</a></li>
+                    <li class="nav-item mb-2"><a href="{% url 'finance_dashboard' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'finance_dashboard' %}fw-bold text-info{% endif %}">Finance</a></li>
                     <li class="nav-item mb-2"><a href="{% url 'admin_notifications_page' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'admin_notifications_page' %}fw-bold text-info{% endif %}">Notifications</a></li>
                 {% else %}
                     <li class="nav-item mb-2"><a href="{% url 'student_dashboard' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'student_dashboard' %}fw-bold text-info{% endif %}">Dashboard</a></li>
                     <li class="nav-item mb-2"><a href="{% url 'available_rooms' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'available_rooms' %}fw-bold text-info{% endif %}">Rooms</a></li>
+                    <li class="nav-item mb-2"><a href="{% url 'student_profile' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'student_profile' %}fw-bold text-info{% endif %}">Payments</a></li>
+                    <li class="nav-item mb-2"><a href="{% url 'view_roommates' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'view_roommates' %}fw-bold text-info{% endif %}{% if not can_view_roommates %} text-muted{% endif %}">Roommates</a></li>
                 {% endif %}
-                <li class="nav-item mb-2"><a href="{% url 'student_profile' %}" class="nav-link text-light {% if request.resolver_match.url_name == 'student_profile' %}fw-bold text-info{% endif %}">Profile</a></li>
+                <li class="nav-item mb-2"><a href="{% if user.is_staff %}{% url 'admin_profile' %}{% else %}{% url 'student_profile' %}{% endif %}" class="nav-link text-light {% if request.resolver_match.url_name == 'student_profile' or request.resolver_match.url_name == 'admin_profile' %}fw-bold text-info{% endif %}">Profile</a></li>
             </ul>
         </div>
 
@@ -89,13 +94,16 @@
             }
         })();
     </script>
+    {% if user.is_authenticated %}
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const badge = document.getElementById('notifBadge');
             const dot = document.getElementById('notifDot');
 
+            // Only run if notification elements exist (user is authenticated)
+            if (!badge || !dot) return;
+
             function updateIndicators(count){
-                if (!badge || !dot) return;
                 if (count > 0) {
                     badge.textContent = count;
                     badge.style.display = 'inline';
@@ -108,16 +116,22 @@
 
             function fetchNotifications() {
                 fetch("{% url 'fetch_notifications' %}")
-                    .then(response => response.json())
-                    .then(data => updateIndicators(data.unread_count))
-                    .catch(() => {});
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => updateIndicators(data.unread_count || 0))
+                    .catch(() => {
+                        // Silently fail if notifications can't be fetched
+                    });
             }
 
             // Initial and interval updates
             fetchNotifications();
             setInterval(fetchNotifications, 20000);
         });
-        </script>
+    </script>
+    {% endif %}
         
 </body>
 </html>
